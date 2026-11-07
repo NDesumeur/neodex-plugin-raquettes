@@ -1,0 +1,22 @@
+{
+  "id": "neodex.raquettes",
+  "name": "Raquettes",
+  "version": "1.0.0",
+  "author": "NDesumeur",
+  "description": "Un duel de raquettes contre l'ordinateur, sur un terrain de nuit. Le premier à 7 points gagne ; la balle accélère à chaque échange.",
+  "icon": "icon.png",
+  "entry": "index.js",
+  "view": "raquettes",
+  "neobase": ">=4.0.0",
+  "type": "app",
+  "category": "Jeux",
+  "syncMode": "progression",
+  "syncInfo": "Victoires par niveau.",
+  "mobile": false,
+  "system": false,
+  "dependencies": {},
+  "sdk": "2.1.0",
+  "permissions": [
+    "storage"
+  ]
+}
