@@ -1,0 +1,9 @@
+{
+  "pluginId": "neodex.raquettes",
+  "repo": "NDesumeur/neodex-plugin-raquettes",
+  "version": "1.0.0",
+  "sha256": "9fb6b3d250ec4851753cb9afcbee91e21a6e4d5bbb63187a8dd87cb114aa2d74",
+  "approvedAt": "2026-11-07T17:30:59.726Z",
+  "neobase": ">=4.0.0",
+  "signature": "6W3jncah15E090yDzCHg5GS7Z3TVRQV+hqLDoBMdXHUEtjTBIZd1W9TVSbp4+Xl671itGZ9fe/Q7uz1ToPlTCA=="
+}
