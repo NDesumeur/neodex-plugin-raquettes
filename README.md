@@ -39,3 +39,7 @@ Tes victoires, ton meilleur écart par niveau et le niveau choisi sont enregistr
 Dans NeoDex : **NeoStore → À découvrir → Raquettes → Installer**.
 
 Développer un plugin : voir le [SDK NeoDex](https://github.com/NDesumeur/neodex-sdk).
+
+## Plein écran
+
+Le terrain grandit avec la fenêtre, du petit portable au grand écran. Le bouton « PLEIN ÉCRAN » le met en plein écran.

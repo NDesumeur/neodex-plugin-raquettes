@@ -39,3 +39,7 @@ Your wins, best margin per level and chosen level are stored by NeoDex, backed u
 In NeoDex: **NeoStore → Discover → Raquettes → Install**.
 
 Building a plugin: see the [NeoDex SDK](https://github.com/NDesumeur/neodex-sdk).
+
+## Full screen
+
+The court grows with the window, from a small laptop to a big screen. The "FULL SCREEN" button switches it to full screen.

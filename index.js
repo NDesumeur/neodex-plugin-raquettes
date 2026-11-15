@@ -5,19 +5,21 @@ const HTML = `<div class="appWrap wide">
   <div class="gMain"><div class="gameBox"><canvas id="gc" width="320" height="200"></canvas></div>
     <div class="gSide">
       <div class="sysCard"><b>RECORDS</b><div class="gStats" id="gStats"></div></div>
-      <div class="row"><button class="btn main" id="gNew">NOUVELLE PARTIE</button></div>
+      <div class="row"><button class="btn main" id="gNew">NOUVELLE PARTIE</button><button class="btn" id="rqFs">PLEIN ÉCRAN</button></div>
       <label class="row">Adversaire <select id="rqLvl" class="f"><option value="0">Facile</option><option value="1">Normal</option><option value="2">Difficile</option></select></label>
       <div class="hint">Le bord de la raquette renvoie la balle en biais, le centre la renvoie droite.</div><div class="hint">La balle accélère à chaque échange : les longs échanges sont les plus durs.</div>
     </div></div>
 </div>`;
 const CSS = `.gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
-.gameBox{display:grid;place-items:center;padding:10px;background:#05010b;flex:2;min-width:320px;position:relative}
-.gameBox canvas{width:100%;image-rendering:pixelated;cursor:var(--cp,pointer);touch-action:none}
+.gameBox{display:grid;place-items:center;padding:10px;background:#05010b;flex:2 1 480px;min-width:min(100%,320px);position:relative}
+.gameBox:fullscreen{padding:0}
+.gameBox:fullscreen canvas{width:min(100vw,calc(100vh * 320 / 200));max-width:none}
+.gameBox canvas{image-rendering:pixelated;cursor:var(--cp,pointer);touch-action:none}
 .gSide{display:flex;flex-direction:column;gap:14px;flex:1;min-width:250px;max-width:420px}
 .gSide .sysCard{display:flex;flex-direction:column}
 .gStats{display:grid;grid-template-columns:1fr auto;gap:4px 14px}
 .gStats b{text-align:right}
-.gameBox canvas{max-width:760px;aspect-ratio:320/200}`;
+.gameBox canvas{width:min(100%,max(280px,calc((100vh - 170px) * 320 / 200)));height:auto;aspect-ratio:320/200}`;
 /* ---------- l'habillage pixel art, dessiné à la main : police bitmap (accents compris), cadres, boutons, icônes ----------
    Tout est en pixels pleins, agrandis par 2 sans lissage : aucun dégradé, aucune ombre floue. */
 const PXK = (() => {
@@ -289,7 +291,7 @@ export default async function (ctx) {
   view.innerHTML = HTML;
   pxSkin(view.querySelector('.appWrap'), { title: "RAQUETTES", T: {"k": "#050c06", "k2": "#0c1a0e", "fill": "#142a18", "fillOn": "#1c3a22", "hl": "#24482a", "line": "#3a6a40", "acc": "#3fe0ff", "accL": "#c8f8ff", "accS": "#1a9ac0", "accD": "#06304a", "rivet": "#c8f8ff", "btn": "#24482a", "btnHi": "#5a9a5a", "btnLo": "#0c1a0e", "btnHov": "#2a5430", "btnHovHi": "#7aba7a", "text": "#f0fff0", "muted": "#b0d0a8", "acc2": "#ff4fa8", "gold": "#ffd84a", "orange": "#ffa030", "red": "#ff4a5a", "green": "#7ee07a", "green2": "#2f8a3a", "bg": "#060e08", "bgDot": "#142a18", "bgDot2": "#0c1a0e", "spark": "#3a6a40", "spark2": "#ff4fa8", "tile": ["................", "...:............", "................", "..........+.....", "................", "................", ".....:..........", "................", "................", ".............:..", "................", "..+.............", "................", ".........:......", "................", "................"]},
   emblem: ["............", "kk........kk", "ka........bk", "ka........bk", "ka...kk...bk", "ka..kwwk..bk", "ka..kwwk..bk", "ka...kk...bk", "ka........bk", "ka........bk", "kk........kk", "............"],
-  icons: [[/^NOUVELLE/, "play"], [/^RECORDS/, "crown"]] });
+  icons: [[/^NOUVELLE/, "play"], [/^RECORDS/, "crown"], [/^PLEIN/, "full"]] });
   const $ = id => view.querySelector('#' + id) || document.getElementById(id);
   const doc = async n => { try { return await folder.read(n); } catch { return null; } };
   const games = { best: {}, ...(await doc('games')) };
@@ -399,6 +401,7 @@ $('rqLvl').onchange = () => { rqs.lvl = +$('rqLvl').value; saveGames(); rqNew();
   rq.ball = {x: 40, y: 30, vx: -4, vy: 0, wait: 0}; rq.my = 180; for (let i = 0; i < 40 && rq.ai === 0; i++) rqUpdate();
   console.assert(returned && rq.ai === 1, 'raquettes', {returned, ai: rq.ai}); rq = keep; Object.assign(rqs, kg); rqs.lvl = kl;
 }
+$('rqFs').onclick = () => { $('rqFs').blur(); try { document.fullscreenElement ? document.exitFullscreen() : cv.parentElement.requestFullscreen?.().catch(() => {}); } catch {} };
 ctx.onOpen(() => { if (!rq) rqNew(); gameLoop(rq, 'raquettes', rqUpdate, rqDraw); rqInfo(); });
 
 }
