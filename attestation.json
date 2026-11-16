@@ -1,9 +1,9 @@
 {
   "pluginId": "neodex.raquettes",
   "repo": "NDesumeur/neodex-plugin-raquettes",
-  "version": "1.0.1",
-  "sha256": "78d98d52f1b645ea6d5c5f95317937d9fcb0e7f1ca8f7c7976b6f51441e4917f",
-  "approvedAt": "2026-11-08T12:10:49.990Z",
+  "version": "1.1.0",
+  "sha256": "ef1a74f951c1b66ea6f2455f897ba16b2ca568023f555cc9761dd3cf29539a56",
+  "approvedAt": "2026-11-16T04:14:39.212Z",
   "neobase": ">=4.0.0",
-  "signature": "kHP8TMXOzpFAJXX4PXZ9SafUWDS6lGgjbYMFOur2yMl65R6k6wqusRahe4OyDD/daz0bAO/WWOCoazCtd/RJDA=="
+  "signature": "Ov+dFoFKNwgaEw2gzgkHrtwH4ffulbvsJxlX5veCvPAkfrKdOdlj14Xt3t+4wVxGn/Pm38gAYqLFiQrCFeISBw=="
 }
