@@ -59,6 +59,7 @@
  "RAQUETTES": "RACKETS",
  "RECORDS": "RECORDS",
  "Raquettes": "Snowshoes",
+ "Rien n'est synchronisé : tes records restent sur cet appareil.": "Nothing is synced: your records stay on this device.",
  "Souris ou ↑ ↓ pour ta raquette (à gauche)": "Mouse or ↑ ↓ for your racket (left)",
  "Souris ou ↑ ↓ · clic ou espace : commencer · P : pause": "Mouse or ↑ ↓ · click or space: start · P: pause",
  "TOI": "YOU",
@@ -67,7 +68,6 @@
  "Ud": "Ud",
  "Ug": "Ug",
  "Victoires": "Victories",
- "Victoires par niveau.": "Victories per level.",
  "· plus long échange :": "· longest exchange:",
  "échanges": "exchanges"
 }
