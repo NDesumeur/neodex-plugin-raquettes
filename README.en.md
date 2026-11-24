@@ -4,6 +4,12 @@ A paddle duel against the computer on a night-time court: return the ball withou
 
 *Version française : [README.md](README.md)*
 
+## Two players, spin and power-ups (new in 1.2.0)
+
+- **2 players** on the same keyboard (in the Opponent list): **W S** (or Z S) for the left paddle, **↑ ↓** for the right one.
+- **Ball spin**: hit while moving your paddle, the ball spins and its path curves. The computer takes it into account.
+- **Power-ups** in the middle of the court, for whoever hit the ball last: a **bigger paddle** for 10 seconds, or a **second ball**.
+
 ## Controls
 
 - **Mouse** (your paddle follows the pointer) or **↑ ↓**: move your paddle, on the left of the court.

@@ -4,6 +4,12 @@ Un duel de raquettes contre l'ordinateur sur un terrain de nuit : renvoie la bal
 
 *English version: [README.en.md](README.en.md)*
 
+## À deux, effets et bonus (nouveau en 1.2.0)
+
+- **2 joueurs** sur le même clavier (dans la liste Adversaire) : **Z S** (ou W S) pour la raquette de gauche, **↑ ↓** pour celle de droite.
+- **Effet de balle** : frappe en bougeant ta raquette, la balle tourne et sa course se courbe. L'ordinateur en tient compte.
+- **Bonus** au milieu du terrain, pour celui qui a frappé la balle en dernier : **raquette plus grande** pendant 10 secondes, ou **deuxième balle**.
+
 ## Commandes
 
 - **Souris** (ta raquette suit le pointeur) ou **↑ ↓** : déplacer ta raquette, à gauche du terrain.

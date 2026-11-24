@@ -1,13 +1,14 @@
 // Raquettes : Un duel de raquettes contre l'ordinateur, sur un terrain de nuit. Le premier à 7 points gagne ; la balle accélère à chaque échange.
 // Jeu NeoDex en pixel art dessiné à la main (police bitmap, cadres et boutons en pixels). Il tourne dans le bac à sable de NeoDex.
 const HTML = `<div class="appWrap wide">
-  <div class="agHead"><span class="label">Raquettes</span><span class="hint">Souris ou ↑ ↓ · clic ou espace : commencer · P : pause</span></div>
+  <div class="agHead"><span class="label">Raquettes</span><span class="hint">Souris ou ↑ ↓ · à deux : Z S à gauche, ↑ ↓ à droite · espace : commencer · P : pause</span></div>
   <div class="gMain"><div class="gameBox"><canvas id="gc" width="320" height="200"></canvas></div>
     <div class="gSide">
       <div class="sysCard"><b>RECORDS</b><div class="gStats" id="gStats"></div></div>
       <div class="row"><button class="btn main" id="gNew">NOUVELLE PARTIE</button><button class="btn" id="rqFs">PLEIN ÉCRAN</button></div>
-      <label class="row">Adversaire <select id="rqLvl" class="f"><option value="0">Facile</option><option value="1">Normal</option><option value="2">Difficile</option></select></label>
+      <label class="row">Adversaire <select id="rqLvl" class="f"><option value="0">Facile</option><option value="1">Normal</option><option value="2">Difficile</option><option value="duo">2 joueurs</option></select></label>
       <div class="hint">Le bord de la raquette renvoie la balle en biais, le centre la renvoie droite.</div><div class="hint">La balle accélère à chaque échange : les longs échanges sont les plus durs.</div>
+      <div class="hint">Frappe en bougeant ta raquette : la balle prend de l'effet et tourne en l'air.</div><div class="hint">Les bonus au milieu vont à celui qui a frappé la balle en dernier : raquette plus grande (une barre) ou deuxième balle (deux points).</div>
     </div></div>
 </div>`;
 const CSS = `.gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
@@ -336,33 +337,56 @@ const RQ = {PH: 26, PW: 4, LX: 14, RX: 302, TOP: 18, BOT: 190, WIN: 7};
 const RQ_AI = [{n: 'Facile', sp: 1.6, err: 18, react: .45}, {n: 'Normal', sp: 2.4, err: 10, react: .6}, {n: 'Difficile', sp: 3.4, err: 4, react: .8}];
 const rqs = gstore('raquettes', {lvl: 1, wins: 0, games: 0});
 let rq = null;
-function rqNew() { rq = Object.assign(rq || {tick: 0, raf: 0}, {mode: 'ready', me: 0, ai: 0, py: 104, ay: 104, ball: null, serve: 1, keys: {}, my: null, trail: [], flash: 0, endAt: 0, rally: 0, best: 0}); rqServe(); rqInfo(); }
-function rqServe() { const d = rq.serve; rq.ball = {x: W / 2, y: (RQ.TOP + RQ.BOT) / 2, vx: 2.2 * d, vy: (Math.random() - .5) * 2.4, wait: 50}; rq.rally = 0; rq.aim = rq.ball.y; }
-function rqPaddle(b, x, y, dir) {  // la balle rebondit plus en biais quand elle touche le bord de la raquette
-  if (b.y < y - RQ.PH / 2 - 2 || b.y > y + RQ.PH / 2 + 2) return false;
-  const off = (b.y - y) / (RQ.PH / 2), sp = Math.min(6.5, Math.hypot(b.vx, b.vy) + .18);
+function rqNew() { rq = Object.assign(rq || {tick: 0, raf: 0}, {mode: 'ready', me: 0, ai: 0, py: 104, ay: 104, ball: null, serve: 1, keys: {}, my: null, trail: [], flash: 0, endAt: 0, rally: 0, best: 0,
+  duo: !!rqs.duo, extra: null, item: null, itemAt: 420, bigL: 0, bigR: 0, pv: 0, av: 0, aiErr: 0}); rqServe(); rqInfo(); }
+function rqServe() { const d = rq.serve; rq.ball = {x: W / 2, y: (RQ.TOP + RQ.BOT) / 2, vx: 2.2 * d, vy: (Math.random() - .5) * 2.4, wait: 50, spin: 0, last: 0}; rq.extra = null; rq.rally = 0; rq.aim = rq.ball.y; }
+const rqPH = dir => RQ.PH * ((dir > 0 ? rq.bigL : rq.bigR) > 0 ? 1.6 : 1);  // dir 1 : la raquette de gauche, -1 : celle de droite
+function rqPaddle(b, x, y, dir, ph, vel) {  // la balle rebondit plus en biais quand elle touche le bord de la raquette ; une raquette qui bouge lui donne de l'effet
+  if (b.y < y - ph / 2 - 2 || b.y > y + ph / 2 + 2) return false;
+  const off = Math.max(-1, Math.min(1, (b.y - y) / (ph / 2))), sp = Math.min(6.5, Math.hypot(b.vx, b.vy) + .18);
   const a = off * 1.0; b.vx = Math.cos(a) * sp * dir; b.vy = Math.sin(a) * sp; b.x = x + dir * (RQ.PW + 3); rq.rally++; rq.best = Math.max(rq.best, rq.rally);
+  b.spin = Math.max(-1, Math.min(1, (vel || 0) / 3.6)); b.last = dir; if (dir > 0 && RQ_AI[rqs.lvl]) rq.aiErr = (Math.random() - .5) * RQ_AI[rqs.lvl].err * 2;
   beep(dir > 0 ? 520 : 440, .04, 'square', 0, .06); rq.flash = 4; return true;
 }
 function rqUpdate() {
   const b = rq.ball, ai = RQ_AI[rqs.lvl];
   // ta raquette : souris (directe) ou flèches
+  const py0 = rq.py, ay0 = rq.ay;
   if (rq.my != null) rq.py += (rq.my - rq.py) * .5; else rq.py += (rq.keys.down ? 3.6 : 0) - (rq.keys.up ? 3.6 : 0);
-  rq.py = Math.max(RQ.TOP + RQ.PH / 2, Math.min(RQ.BOT - RQ.PH / 2, rq.py));
-  // l'ordinateur : il prévoit où la balle arrive (rebonds compris), avec une petite erreur, et ne réagit qu'à une partie du terrain
-  if (b.vx > 0 && b.x > W * (1 - ai.react)) { if (rq.aimFor !== b.vy) { let y = b.y, vy = b.vy, x = b.x; while (x < RQ.RX) { x += b.vx; y += vy; if (y < RQ.TOP + 3 || y > RQ.BOT - 3) vy = -vy; } rq.aim = y + (Math.random() - .5) * ai.err * 2; rq.aimFor = b.vy; } }
-  else if (b.vx < 0) rq.aim = (RQ.TOP + RQ.BOT) / 2;
-  rq.ay += Math.max(-ai.sp, Math.min(ai.sp, rq.aim - rq.ay)); rq.ay = Math.max(RQ.TOP + RQ.PH / 2, Math.min(RQ.BOT - RQ.PH / 2, rq.ay));
+  rq.py = Math.max(RQ.TOP + rqPH(1) / 2, Math.min(RQ.BOT - rqPH(1) / 2, rq.py)); rq.pv = rq.py - py0;
+  if (rq.bigL > 0) rq.bigL--; if (rq.bigR > 0) rq.bigR--;
+  if (rq.item && --rq.item.t <= 0) rq.item = null;
+  if (!rq.item && !(b.wait > 0) && --rq.itemAt <= 0) { rq.item = {x: W / 2 + (Math.random() - .5) * 80, y: RQ.TOP + 20 + Math.random() * (RQ.BOT - RQ.TOP - 40), k: Math.random() < .5 ? 'big' : 'multi', t: 600}; rq.itemAt = 420 + Math.random() * 300; }
+  if (rq.duo) { rq.ay += (rq.keys.down2 ? 3.6 : 0) - (rq.keys.up2 ? 3.6 : 0); rq.ay = Math.max(RQ.TOP + rqPH(-1) / 2, Math.min(RQ.BOT - rqPH(-1) / 2, rq.ay)); rq.av = rq.ay - ay0; }
+  else rqAI(b, ai, ay0);
   if (b.wait > 0) { b.wait--; return; }
+  if (rqMove(b)) return; if (rq.extra && rqMove(rq.extra)) return;
+  rq.trail.push([b.x, b.y]); if (rq.trail.length > 6) rq.trail.shift(); if (rq.flash) rq.flash--;
+}
+function rqAI(b, ai, ay0) {
+  // l'ordinateur : il prévoit où la balle arrive (rebonds compris), avec une petite erreur, et ne réagit qu'à une partie du terrain
+  const tg = [b, rq.extra].filter(q => q && q.vx > 0).sort((p, q) => q.x - p.x)[0];
+  if (tg && tg.x > W * (1 - ai.react)) { if (rq.aimBall !== tg || rq.tick % 8 === 0) { let {x, y, vy, spin = 0} = tg; for (let i = 0; i < 900 && x < RQ.RX; i++) { vy = Math.max(-5, Math.min(5, vy + spin * .02)); spin *= .995; x += tg.vx / 3; y += vy / 3; if (y < RQ.TOP + 3 || y > RQ.BOT - 3) vy = -vy; } rq.aim = y + rq.aiErr; rq.aimBall = tg; } }
+  else if (!tg) rq.aim = (RQ.TOP + RQ.BOT) / 2;
+  rq.ay += Math.max(-ai.sp, Math.min(ai.sp, rq.aim - rq.ay)); rq.ay = Math.max(RQ.TOP + rqPH(-1) / 2, Math.min(RQ.BOT - rqPH(-1) / 2, rq.ay)); rq.av = rq.ay - ay0;
+}
+function rqTake(b) {  // le bonus va à celui qui a frappé la balle en dernier
+  const it = rq.item; rq.item = null; beep(990, .15, 'triangle', 1480, .07);
+  if (it.k === 'big') { if (b.last > 0) rq.bigL = 600; else rq.bigR = 600; }
+  else if (!rq.extra) rq.extra = {x: b.x, y: b.y, vx: b.vx, vy: -b.vy || 1.5, spin: 0, last: b.last, wait: 0};
+}
+function rqMove(b) {  // une balle avance ; vrai si elle a donné un point
   for (let s = 0; s < 3; s++) {
+    if (b.spin) { b.vy = Math.max(-5, Math.min(5, b.vy + b.spin * .02)); b.spin *= .995; }
     b.x += b.vx / 3; b.y += b.vy / 3;
     if (b.y < RQ.TOP + 3) { b.y = RQ.TOP + 3; b.vy = Math.abs(b.vy); beep(300, .02, 'square', 0, .04); } if (b.y > RQ.BOT - 3) { b.y = RQ.BOT - 3; b.vy = -Math.abs(b.vy); beep(300, .02, 'square', 0, .04); }
-    if (b.vx < 0 && b.x <= RQ.LX + RQ.PW + 2 && b.x > RQ.LX - 2) rqPaddle(b, RQ.LX, rq.py, 1);
-    if (b.vx > 0 && b.x >= RQ.RX - 2 && b.x < RQ.RX + RQ.PW + 2) rqPaddle(b, RQ.RX, rq.ay, -1);
+    if (b.vx < 0 && b.x <= RQ.LX + RQ.PW + 2 && b.x > RQ.LX - 2) rqPaddle(b, RQ.LX, rq.py, 1, rqPH(1), rq.pv);
+    if (b.vx > 0 && b.x >= RQ.RX - 2 && b.x < RQ.RX + RQ.PW + 2) rqPaddle(b, RQ.RX, rq.ay, -1, rqPH(-1), rq.av);
+    if (rq.item && b.last && Math.abs(b.x - rq.item.x) < 7 && Math.abs(b.y - rq.item.y) < 7) rqTake(b);
     if (b.x < -6 || b.x > W + 6) { const meWon = b.x > W; if (meWon) rq.me++; else rq.ai++; rq.serve = meWon ? -1 : 1; beep(meWon ? 880 : 180, .2, 'triangle', meWon ? 1320 : 90, .07); rq.point = {me: meWon, t: rq.tick};
-      if (rq.me >= RQ.WIN || rq.ai >= RQ.WIN) { rq.mode = 'over'; rq.endAt = rq.tick; rqs.games++; if (rq.me > rq.ai) rqs.wins++; best('raquettes' + rqs.lvl, rq.me - rq.ai); saveGames(); rqInfo(); } else rqServe(); return; }
+      if (rq.me >= RQ.WIN || rq.ai >= RQ.WIN) { rq.mode = 'over'; rq.endAt = rq.tick; rqs.games++; if (rq.duo) { rqs.games--; rqs.duoGames = (rqs.duoGames || 0) + 1; } else { if (rq.me > rq.ai) rqs.wins++; best('raquettes' + rqs.lvl, rq.me - rq.ai); } saveGames(); rqInfo(); } else rqServe(); return true; }
   }
-  rq.trail.push([b.x, b.y]); if (rq.trail.length > 6) rq.trail.shift(); if (rq.flash) rq.flash--;
+  return false;
 }
 const RQ_BG = cnv(W, H, b => {  // un terrain de nuit : gazon tramé, lignes blanches, filet en pointillés
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(b, y < RQ.TOP || y > RQ.BOT ? '#05010b' : (Math.floor(x / 20) % 2 ? '#1a4a2a' : '#1e5430'), x, y);
@@ -371,16 +395,19 @@ const RQ_BG = cnv(W, H, b => {  // un terrain de nuit : gazon tramé, lignes bla
 });
 const RQ_DIG = {0: '###|#.#|#.#|#.#|###', 1: '.#.|##.|.#.|.#.|###', 2: '###|..#|###|#..|###', 3: '###|..#|###|..#|###', 4: '#.#|#.#|###|..#|..#', 5: '###|#..|###|..#|###', 6: '###|#..|###|#.#|###', 7: '###|..#|..#|..#|..#'};
 const rqDigit = (n, x, y, col) => RQ_DIG[n].split('|').forEach((r, j) => [...r].forEach((c, i) => { if (c === '#') px(g, col, x + i * 4, y + j * 4, 4, 4); }));
-function rqPad(x, y, col, hi) { px(g, '#05010b', x - 1, y - RQ.PH / 2 - 1, RQ.PW + 2, RQ.PH + 2); px(g, col, x, y - RQ.PH / 2, RQ.PW, RQ.PH); px(g, hi, x, y - RQ.PH / 2, 1, RQ.PH); px(g, '#ffffff', x + 1, y - 1, RQ.PW - 2, 2); }
+function rqPad(x, y, col, hi, ph = RQ.PH) { ph = Math.round(ph); px(g, '#05010b', x - 1, y - ph / 2 - 1, RQ.PW + 2, ph + 2); px(g, col, x, y - ph / 2, RQ.PW, ph); px(g, hi, x, y - ph / 2, 1, ph); px(g, '#ffffff', x + 1, y - 1, RQ.PW - 2, 2); }
 function rqDraw() {
   g.drawImage(RQ_BG, 0, 0);
   rqDigit(Math.min(7, rq.me), W / 2 - 34, 26, '#3a8a4a'); rqDigit(Math.min(7, rq.ai), W / 2 + 22, 26, '#3a8a4a');
-  rqPad(RQ.LX, Math.round(rq.py), '#3fe0ff', '#c8f8ff'); rqPad(RQ.RX, Math.round(rq.ay), '#ff4fa8', '#ffb0d8');
+  rqPad(RQ.LX, Math.round(rq.py), '#3fe0ff', '#c8f8ff', rqPH(1)); rqPad(RQ.RX, Math.round(rq.ay), '#ff4fa8', '#ffb0d8', rqPH(-1));
+  if (rq.item && (rq.item.t > 120 || (rq.tick >> 3) % 2)) { const {x, y, k} = rq.item, X = Math.round(x) - 5, Y = Math.round(y) - 5; px(g, '#05010b', X - 1, Y - 1, 12, 12); px(g, '#ffd84a', X, Y, 10, 10); px(g, '#a8780a', X + 1, Y + 1, 8, 8);
+    if (k === 'big') px(g, '#ffffff', X + 4, Y + 2, 2, 6); else { px(g, '#ffffff', X + 2, Y + 4, 2, 2); px(g, '#ffffff', X + 6, Y + 4, 2, 2); } }
+  for (const q of [rq.extra]) if (q) { px(g, '#05010b', q.x - 3, q.y - 2, 6, 4); px(g, '#05010b', q.x - 2, q.y - 3, 4, 6); px(g, '#9affb0', q.x - 2, q.y - 2, 4, 4); px(g, '#ffffff', q.x - 2, q.y - 2, 1, 1); }
   const b = rq.ball; rq.trail.forEach(([x, y], i) => { g.globalAlpha = i / 12; px(g, '#fff4a0', x - 1, y - 1, 3, 3); g.globalAlpha = 1; });
-  if (!(b.wait > 0 && Math.floor(b.wait / 6) % 2)) { px(g, '#05010b', b.x - 3, b.y - 2, 6, 4); px(g, '#05010b', b.x - 2, b.y - 3, 4, 6); px(g, rq.flash ? '#ffffff' : '#fff4a0', b.x - 2, b.y - 2, 4, 4); px(g, '#ffffff', b.x - 2, b.y - 2, 1, 1); }
-  pxFont(g, 'TOI', 8, 11, '#3fe0ff', 6); pxFont(g, RQ_AI[rqs.lvl].n.toUpperCase(), W - 8, 11, '#ff4fa8', 6, 'right'); if (rq.rally > 3) pxFont(g, rq.rally + ' échanges', W / 2, 11, '#c8e8c8', 6, 'center');
-  if (rq.mode === 'ready') gameText(g, W, [['RAQUETTES', '#3fe0ff', 14], ['Souris ou ↑ ↓ pour ta raquette (à gauche)', '#ffffff'], ['Premier à 7 points', '#c8e8c8'], ['Clic ou espace pour commencer', '#ffd84a']], 84);
-  if (rq.mode === 'over' && rq.tick - rq.endAt > 30) gameText(g, W, [[rq.me > rq.ai ? 'GAGNÉ !' : 'PERDU', rq.me > rq.ai ? '#5fdf6a' : '#ff4a5a', 14], [rq.me + ' à ' + rq.ai + ' · plus long échange : ' + rq.best, '#ffffff'], ['Clic pour rejouer', '#ffd84a']], 94);
+  if (!(b.wait > 0 && Math.floor(b.wait / 6) % 2)) { px(g, '#05010b', b.x - 3, b.y - 2, 6, 4); px(g, '#05010b', b.x - 2, b.y - 3, 4, 6); px(g, rq.flash ? '#ffffff' : '#fff4a0', b.x - 2, b.y - 2, 4, 4); px(g, '#ffffff', b.x - 2, b.y - 2, 1, 1); if (Math.abs(b.spin || 0) > .2) px(g, '#ff8a3a', b.x - 1 + Math.round(Math.cos(rq.tick / 3) * 2), b.y - 1 + Math.round(Math.sin(rq.tick / 3) * 2), 1, 1); }
+  pxFont(g, rq.duo ? 'J1' : 'TOI', 8, 11, '#3fe0ff', 6); pxFont(g, rq.duo ? 'J2' : RQ_AI[rqs.lvl].n.toUpperCase(), W - 8, 11, '#ff4fa8', 6, 'right'); if (rq.rally > 3) pxFont(g, rq.rally + ' échanges', W / 2, 11, '#c8e8c8', 6, 'center');
+  if (rq.mode === 'ready') gameText(g, W, [['RAQUETTES', '#3fe0ff', 14], [rq.duo ? 'J1 : Z S (gauche) · J2 : ↑ ↓ (droite)' : 'Souris ou ↑ ↓ pour ta raquette (à gauche)', '#ffffff'], ['Premier à 7 points', '#c8e8c8'], ['Clic ou espace pour commencer', '#ffd84a']], 84);
+  if (rq.mode === 'over' && rq.tick - rq.endAt > 30) gameText(g, W, [[rq.duo ? (rq.me > rq.ai ? 'J1 GAGNE !' : 'J2 GAGNE !') : rq.me > rq.ai ? 'GAGNÉ !' : 'PERDU', rq.duo ? (rq.me > rq.ai ? '#3fe0ff' : '#ff4fa8') : rq.me > rq.ai ? '#5fdf6a' : '#ff4a5a', 14], [rq.me + ' à ' + rq.ai + ' · plus long échange : ' + rq.best, '#ffffff'], ['Clic pour rejouer', '#ffd84a']], 94);
 }
 const rqGo = () => { if (rq.mode === 'ready') rq.mode = 'play'; else if (rq.mode === 'over' && rq.tick - rq.endAt > 30) { rqNew(); rq.mode = 'play'; } else if (rq.mode === 'pause') rq.mode = 'play'; };
 cv.onpointermove = e => { if (rq) rq.my = cpos(e)[1]; };
@@ -388,19 +415,28 @@ cv.onpointerleave = () => { if (rq) rq.my = null; };
 cv.onpointerdown = e => { e.preventDefault(); if (rq) rqGo(); };
 document.addEventListener('keydown', e => {
   if (!keyOk(e) || !rq) return; const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (k === 'ArrowUp' || k === 'z' || k === 'w') { e.preventDefault(); rq.keys.up = true; rq.my = null; } if (k === 'ArrowDown' || k === 's') { e.preventDefault(); rq.keys.down = true; rq.my = null; }
+  const two = rq.duo && (k === 'ArrowUp' || k === 'ArrowDown');
+  if (k === 'ArrowUp' || k === 'z' || k === 'w') { e.preventDefault(); rq.keys[two ? 'up2' : 'up'] = true; if (!two) rq.my = null; } if (k === 'ArrowDown' || k === 's') { e.preventDefault(); rq.keys[two ? 'down2' : 'down'] = true; if (!two) rq.my = null; }
   if (k === ' ' || k === 'Enter') { e.preventDefault(); rqGo(); } if (k === 'p' && rq.mode === 'play') rq.mode = 'pause';
 });
-document.addEventListener('keyup', e => { if (!rq) return; const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (k === 'ArrowUp' || k === 'z' || k === 'w') rq.keys.up = false; if (k === 'ArrowDown' || k === 's') rq.keys.down = false; });
-function rqInfo() { const b = games.best['raquettes' + rqs.lvl]; showStats([['Victoires', rqs.wins + ' / ' + rqs.games], ['Meilleur écart (' + RQ_AI[rqs.lvl].n.toLowerCase() + ')', b != null ? (b > 0 ? '+' : '') + b : '—']]); $('rqLvl').value = rqs.lvl; }
+document.addEventListener('keyup', e => { if (!rq) return; const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; const two = rq.duo && (k === 'ArrowUp' || k === 'ArrowDown'); if (k === 'ArrowUp' || k === 'z' || k === 'w') rq.keys[two ? 'up2' : 'up'] = false; if (k === 'ArrowDown' || k === 's') rq.keys[two ? 'down2' : 'down'] = false; });
+function rqInfo() { const b = games.best['raquettes' + rqs.lvl]; showStats([['Victoires', rqs.wins + ' / ' + rqs.games], ['Meilleur écart (' + RQ_AI[rqs.lvl].n.toLowerCase() + ')', b != null ? (b > 0 ? '+' : '') + b : '—'], ['Parties à deux', rqs.duoGames || 0]]); $('rqLvl').value = rqs.duo ? 'duo' : rqs.lvl; }
 $('gNew').onclick = () => { rqNew(); $('gNew').blur(); };
-$('rqLvl').onchange = () => { rqs.lvl = +$('rqLvl').value; saveGames(); rqNew(); $('rqLvl').blur(); };
+$('rqLvl').onchange = () => { const v = $('rqLvl').value; rqs.duo = v === 'duo'; if (!rqs.duo) rqs.lvl = +v; saveGames(); rqNew(); $('rqLvl').blur(); };
 {  // vérification : l'ordinateur en difficile renvoie une balle droite, et une balle qui passe donne le point
   const keep = rq, kl = rqs.lvl, kg = {...rqs}; rq = null; rqNew(); rqs.lvl = 2; rq.mode = 'play'; rq.ball = {x: 200, y: 60, vx: 3, vy: 1.2, wait: 0}; rq.my = 104;
   for (let i = 0; i < 80 && rq.ball.vx > 0; i++) rqUpdate(); const returned = rq.ball.vx < 0;
   rq.ball = {x: 40, y: 30, vx: -4, vy: 0, wait: 0}; rq.my = 180; for (let i = 0; i < 40 && rq.ai === 0; i++) rqUpdate();
-  console.assert(returned && rq.ai === 1, 'raquettes', {returned, ai: rq.ai}); rq = keep; Object.assign(rqs, kg); rqs.lvl = kl;
+  // l'effet : frappe en descendant, la balle tourne et sa course plonge ; la grande raquette rattrape une balle au bord ; le bonus 2 lance une deuxième balle ; à deux, les flèches bougent la droite
+  const bad = [], aiPt = rq.ai; rqs.duo = false; rqNew(); rq.mode = 'play'; rq.my = null; rq.keys.down = true; rq.py = 100; rq.ball = {x: 30, y: 112, vx: -3, vy: 0, wait: 0, spin: 0, last: 0};
+  for (let i = 0; i < 20 && rq.ball.vx < 0; i++) rqUpdate(); rq.keys.down = false; const sp = rq.ball.spin, vy0 = rq.ball.vy; for (let i = 0; i < 10; i++) rqUpdate();
+  if (!(sp > .5) || !(rq.ball.vy > vy0 + .3)) bad.push('effet ' + sp + ' ' + vy0 + ' → ' + rq.ball.vy);
+  rqNew(); rq.mode = 'play'; rq.my = null; rq.py = 100; rq.bigL = 600; rq.ball = {x: 30, y: 119, vx: -3, vy: 0, wait: 0, spin: 0, last: 0}; for (let i = 0; i < 20 && rq.ball.vx < 0 && rq.ai === 0; i++) rqUpdate(); if (rq.ai || rq.ball.vx < 0) bad.push('grande raquette');
+  rqNew(); rq.mode = 'play'; rq.item = {x: 160, y: 100, k: 'multi', t: 600}; rq.ball = {x: 150, y: 100, vx: 3, vy: 0, wait: 0, spin: 0, last: 1}; for (let i = 0; i < 6; i++) rqUpdate(); if (!rq.extra || rq.item) bad.push('deuxième balle');
+  rqs.duo = true; rqNew(); rq.mode = 'play'; rq.ay = 100; rq.keys.down2 = true; rqUpdate(); if (rq.ay !== 103.6) bad.push('à deux : ' + rq.ay); rq.keys.down2 = false; rqUpdate(); if (rq.ay !== 103.6) bad.push('à deux, la droite bouge seule');
+  console.assert(returned && aiPt === 1 && !bad.length, 'raquettes', {returned, aiPt, bad}); rq = keep; Object.assign(rqs, kg); rqs.lvl = kl;
 }
+cv.__rq = {st: () => rq, rqs};
 $('rqFs').onclick = () => { $('rqFs').blur(); try { document.fullscreenElement ? document.exitFullscreen() : cv.parentElement.requestFullscreen?.().catch(() => {}); } catch {} };
 ctx.onOpen(() => { if (!rq) rqNew(); gameLoop(rq, 'raquettes', rqUpdate, rqDraw); rqInfo(); });
 
