@@ -1,7 +1,7 @@
 {
   "id": "neodex.raquettes",
   "name": "Raquettes",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": "NDesumeur",
   "description": "Duel de raquettes contre l'ordinateur sur un terrain de nuit : déplace ta raquette à la souris ou aux flèches et renvoie la balle sans la laisser passer. Le bord de la raquette renvoie en biais, la balle accélère à chaque échange, le premier à 7 points gagne. Trois niveaux d'adversaire qui anticipe les rebonds, victoires et meilleur écart gardés. Le jeu prend toute la place de l'écran, et un bouton le met en plein écran. Mode à deux sur le même clavier, effets de balle et bonus.",
   "icon": "icon.png",
@@ -22,5 +22,58 @@
   "sdk": "2.1.0",
   "permissions": [
     "storage"
+  ],
+  "succes": [
+    {
+      "id": "facile",
+      "nom": "Premier échange",
+      "texte": "Battre l'ordinateur en Facile"
+    },
+    {
+      "id": "normal",
+      "nom": "Joli revers",
+      "texte": "Battre l'ordinateur en Normal"
+    },
+    {
+      "id": "difficile",
+      "nom": "Mur imprenable",
+      "texte": "Battre l'ordinateur en Difficile"
+    },
+    {
+      "id": "blanc",
+      "nom": "Jeu blanc",
+      "texte": "Gagner sans perdre un point en Difficile",
+      "cache": true
+    },
+    {
+      "id": "dix",
+      "nom": "Habitué du court",
+      "texte": "Gagner 10 matchs"
+    },
+    {
+      "id": "duo",
+      "nom": "Entre amis",
+      "texte": "Jouer un match à deux"
+    }
+  ],
+  "records": [
+    {
+      "id": "facile",
+      "nom": "Meilleur écart (facile)",
+      "sens": "haut",
+      "format": "nombre"
+    },
+    {
+      "id": "normal",
+      "nom": "Meilleur écart (normal)",
+      "sens": "haut",
+      "format": "nombre"
+    },
+    {
+      "id": "difficile",
+      "nom": "Meilleur écart (difficile)",
+      "sens": "haut",
+      "format": "nombre"
+    }
   ]
 }

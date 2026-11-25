@@ -83,5 +83,20 @@
  "deuxième balle": "second ball",
  "à deux :": "two players:",
  "à deux, la droite bouge seule": "two players, the right paddle moves by itself",
- "Duel de raquettes contre l'ordinateur sur un terrain de nuit : déplace ta raquette à la souris ou aux flèches et renvoie la balle sans la laisser passer. Le bord de la raquette renvoie en biais, la balle accélère à chaque échange, le premier à 7 points gagne. Trois niveaux d'adversaire qui anticipe les rebonds, victoires et meilleur écart gardés. Le jeu prend toute la place de l'écran, et un bouton le met en plein écran. Mode à deux sur le même clavier, effets de balle et bonus.": "A paddle duel against the computer on a night-time court: move your paddle with the mouse or arrows and return the ball without letting it past. The paddle's edge sends it at an angle, the ball speeds up with every exchange, and the first to 7 points wins. Three opponent levels that anticipate bounces, with wins and best margin kept. The game takes up the whole screen, and a button switches it to full screen. Two-player mode on one keyboard, ball spin and power-ups."
+ "Duel de raquettes contre l'ordinateur sur un terrain de nuit : déplace ta raquette à la souris ou aux flèches et renvoie la balle sans la laisser passer. Le bord de la raquette renvoie en biais, la balle accélère à chaque échange, le premier à 7 points gagne. Trois niveaux d'adversaire qui anticipe les rebonds, victoires et meilleur écart gardés. Le jeu prend toute la place de l'écran, et un bouton le met en plein écran. Mode à deux sur le même clavier, effets de balle et bonus.": "A paddle duel against the computer on a night-time court: move your paddle with the mouse or arrows and return the ball without letting it past. The paddle's edge sends it at an angle, the ball speeds up with every exchange, and the first to 7 points wins. Three opponent levels that anticipate bounces, with wins and best margin kept. The game takes up the whole screen, and a button switches it to full screen. Two-player mode on one keyboard, ball spin and power-ups.",
+ "Premier échange": "First rally",
+ "Battre l'ordinateur en Facile": "Beat the computer on Easy",
+ "Joli revers": "Nice backhand",
+ "Battre l'ordinateur en Normal": "Beat the computer on Normal",
+ "Mur imprenable": "Impenetrable wall",
+ "Battre l'ordinateur en Difficile": "Beat the computer on Hard",
+ "Jeu blanc": "Love game",
+ "Gagner sans perdre un point en Difficile": "Win without dropping a point on Hard",
+ "Habitué du court": "Court regular",
+ "Gagner 10 matchs": "Win 10 matches",
+ "Entre amis": "Among friends",
+ "Jouer un match à deux": "Play a two-player match",
+ "Meilleur écart (facile)": "Best margin (easy)",
+ "Meilleur écart (normal)": "Best margin (normal)",
+ "Meilleur écart (difficile)": "Best margin (hard)"
 }

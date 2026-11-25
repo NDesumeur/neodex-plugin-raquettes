@@ -300,6 +300,9 @@ export default async function (ctx) {
   const saveGames = () => { clearTimeout(gamesTimer); gamesTimer = setTimeout(() => { gamesTimer = null; folder.write('games', games).catch(() => {}); }, 500); };
   const best = (k, v) => { const b = games.best[k]; if (b == null || v > b) { games.best[k] = v; saveGames(); return true; } return false; };
   const gstore = (k, init) => (games[k] ??= init);
+  // les trophées de NeoDex (3.4.8 et plus) : succès et records déclarés dans plugin.json ; sur un NeoDex plus ancien, rien ne se passe
+  const trophy = id => { ctx.games?.unlock(id).catch(() => {}); };
+  const trophyRecord = (id, v) => { if (v != null && Number.isFinite(+v)) ctx.games?.record(id, +v).catch(() => {}); };
 function gameLoop(st, appKey, update, draw) {
   cancelAnimationFrame(st.raf);
   const STEP = 1000 / 60; let acc = 0, last = performance.now();
@@ -420,7 +423,8 @@ document.addEventListener('keydown', e => {
   if (k === ' ' || k === 'Enter') { e.preventDefault(); rqGo(); } if (k === 'p' && rq.mode === 'play') rq.mode = 'pause';
 });
 document.addEventListener('keyup', e => { if (!rq) return; const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; const two = rq.duo && (k === 'ArrowUp' || k === 'ArrowDown'); if (k === 'ArrowUp' || k === 'z' || k === 'w') rq.keys[two ? 'up2' : 'up'] = false; if (k === 'ArrowDown' || k === 's') rq.keys[two ? 'down2' : 'down'] = false; });
-function rqInfo() { const b = games.best['raquettes' + rqs.lvl]; showStats([['Victoires', rqs.wins + ' / ' + rqs.games], ['Meilleur écart (' + RQ_AI[rqs.lvl].n.toLowerCase() + ')', b != null ? (b > 0 ? '+' : '') + b : '—'], ['Parties à deux', rqs.duoGames || 0]]); $('rqLvl').value = rqs.duo ? 'duo' : rqs.lvl; }
+function rqInfo() {
+  setTimeout(rqTrophies); const b = games.best['raquettes' + rqs.lvl]; showStats([['Victoires', rqs.wins + ' / ' + rqs.games], ['Meilleur écart (' + RQ_AI[rqs.lvl].n.toLowerCase() + ')', b != null ? (b > 0 ? '+' : '') + b : '—'], ['Parties à deux', rqs.duoGames || 0]]); $('rqLvl').value = rqs.duo ? 'duo' : rqs.lvl; }
 $('gNew').onclick = () => { rqNew(); $('gNew').blur(); };
 $('rqLvl').onchange = () => { const v = $('rqLvl').value; rqs.duo = v === 'duo'; if (!rqs.duo) rqs.lvl = +v; saveGames(); rqNew(); $('rqLvl').blur(); };
 {  // vérification : l'ordinateur en difficile renvoie une balle droite, et une balle qui passe donne le point
@@ -438,6 +442,13 @@ $('rqLvl').onchange = () => { const v = $('rqLvl').value; rqs.duo = v === 'duo';
 }
 cv.__rq = {st: () => rq, rqs};
 $('rqFs').onclick = () => { $('rqFs').blur(); try { document.fullscreenElement ? document.exitFullscreen() : cv.parentElement.requestFullscreen?.().catch(() => {}); } catch {} };
+// les trophées, tirés des statistiques et des records gardés (aussi à l'ouverture : ce qui a été fait avant compte)
+function rqTrophies() {
+  const b = [0, 1, 2].map(i => games.best['raquettes' + i]), sig = [rqs.wins, rqs.duoGames, b.join()].join(); if (sig === rqTrophies.sig) return; rqTrophies.sig = sig;
+  trophyRecord('facile', b[0] > 0 ? b[0] : null); trophyRecord('normal', b[1] > 0 ? b[1] : null); trophyRecord('difficile', b[2] > 0 ? b[2] : null);
+  if (b[0] > 0) trophy('facile'); if (b[1] > 0) trophy('normal'); if (b[2] > 0) trophy('difficile'); if (b[2] >= RQ.WIN) trophy('blanc');
+  if (rqs.wins >= 10) trophy('dix'); if (rqs.duoGames >= 1) trophy('duo');
+}
 ctx.onOpen(() => { if (!rq) rqNew(); gameLoop(rq, 'raquettes', rqUpdate, rqDraw); rqInfo(); });
 
 }
